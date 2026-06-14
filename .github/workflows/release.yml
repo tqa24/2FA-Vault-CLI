@@ -1,0 +1,103 @@
+name: Release CLI
+
+# Builds a single-file `2fav` binary for every supported platform and attaches
+# all of them to a GitHub Release created on the triggering tag.
+#
+# Triggers on tags matching `cli-v*` (e.g. `cli-v0.1.0`).
+
+on:
+  push:
+    tags:
+      - 'cli-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish under (must already exist)'
+        required: true
+
+permissions:
+  contents: write # required by softprops/action-gh-release to upload assets
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: bun-linux-x64
+            artifact: 2fav-linux-x64
+          - os: ubuntu-latest
+            target: bun-linux-arm64
+            artifact: 2fav-linux-arm64
+          - os: macos-latest
+            target: bun-darwin-x64
+            artifact: 2fav-darwin-x64
+          - os: macos-latest
+            target: bun-darwin-arm64
+            artifact: 2fav-darwin-arm64
+          - os: windows-latest
+            target: bun-windows-x64
+            artifact: 2fav-win-x64.exe
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build binary (${{ matrix.target }})
+        run: bun build src/cli.ts --compile --target=${{ matrix.target }} --outfile dist/${{ matrix.artifact }}
+
+      - name: Smoke test (unix)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x dist/${{ matrix.artifact }}
+          ./dist/${{ matrix.artifact }} --version
+
+      - name: Smoke test (windows)
+        if: runner.os == 'Windows'
+        run: ./dist/${{ matrix.artifact }} --version
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create / update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: ${{ steps.tag.outputs.name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: dist/*

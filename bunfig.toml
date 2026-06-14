@@ -1,0 +1,14 @@
+# Bun configuration for 2FA-Vault-CLI
+# Docs: https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Auto-install dependencies on first run if bun.lockb is missing.
+auto = "auto"
+# Use exact versions for reproducible builds.
+saveTextLockfile = true
+
+[test]
+# Default test command (`bun test`) looks here.
+root = "src"
+
+# Bun's TypeScript loader is enabled by default; no JS/TS transpile config needed.

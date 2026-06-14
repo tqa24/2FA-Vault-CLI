@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+bun.lockb
+bun.lock
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS keychain test artifacts (local-only)
+.2fav/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.log
