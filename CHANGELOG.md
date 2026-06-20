@@ -5,6 +5,15 @@ All notable changes to the 2FA-Vault CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `2fav list --search <text>`: alias for `--filter` (case-insensitive substring match on service/account).
+- `2fav get <service> --watch`: refreshes the OTP at the start of each TOTP period until interrupted (disabled with a note for HOTP/period-less accounts).
+- `2fav get <service> --copy`: additionally copies the OTP to the system clipboard.
+- E2EE detection in `get`: emits a clear, actionable error when the target account uses E2EE (CLI v1 supports non-E2EE vaults only), instead of failing opaquely.
+
 ## [1.0.0] - 2026-06-14
 
 Phase 1 MVP. API-only commands (no E2EE); OTPs are generated server-side.

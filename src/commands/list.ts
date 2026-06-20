@@ -13,13 +13,15 @@ import type { Account, AccountListResponse } from '../types.js';
 export const listCommand = new Command('list')
     .description('List your 2FA accounts (service — account)')
     .option('--filter <text>', 'Case-insensitive substring filter on service or account')
-    .action(async (opts: { filter?: string }) => {
+    .option('--search <text>', 'Alias for --filter')
+    .action(async (opts: { filter?: string; search?: string }) => {
         const body = await apiGet<AccountListResponse>('/twofaccounts?withOtp=0');
         const accounts = body?.data ?? [];
 
-        const visible = opts.filter ? applyFilter(accounts, opts.filter) : accounts;
+        const query = opts.filter ?? opts.search;
+        const visible = query ? applyFilter(accounts, query) : accounts;
         if (visible.length === 0) {
-            const suffix = opts.filter ? ` matching '${opts.filter}'` : '';
+            const suffix = query ? ` matching '${query}'` : '';
             throw new CliError(`No accounts found${suffix}.`);
         }
 
