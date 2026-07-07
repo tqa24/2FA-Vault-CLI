@@ -38,4 +38,4 @@ Phase 1 MVP. API-only commands (no E2EE); OTPs are generated server-side.
 ### Notes
 
 - Phase 2 (local E2EE unlock with Argon2id + AES-256-GCM mirroring `2FA-Vault/resources/js/services/crypto.js`, and client-side TOTP) is not yet implemented.
-- CLI `bun test` suite is deferred.
+- Tests: 29 unit tests (api, keychain, clipboard) pass under `bun test`.
