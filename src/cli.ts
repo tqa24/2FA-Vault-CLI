@@ -17,8 +17,12 @@ import { listCommand } from './commands/list.js';
 import { getCommand } from './commands/get.js';
 import { copyCommand } from './commands/copy.js';
 import { CliError } from './services/api.js';
+import pkg from '../package.json' with { type: 'json' };
 
-const VERSION = '0.1.0';
+// Single source of truth: read from package.json so the compiled binary and
+// `npm/bun` metadata can never drift apart. Bumping the version in
+// package.json is the only change needed for both `--version` and releases.
+const VERSION = pkg.version;
 
 program
     .name('2fav')
