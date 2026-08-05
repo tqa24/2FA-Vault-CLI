@@ -6,8 +6,11 @@
  *
  * Storage strategy:
  *   1. Try the OS keychain via keytar.
- *   2. On any keytar failure, fall back to `~/.2fav/config.json` (mode 0600)
- *      and warn the user that the keychain is unavailable.
+ *   2. On any keytar failure, REFUSE to silently degrade. Require the caller
+ *      to pass `--insecure-store` to opt in to the plaintext fallback file
+ *      `~/.2fav/config.json` (mode 0600). This avoids cross-compiled binaries
+ *      (where the native keytar binding cannot load) silently storing PATs in
+ *      plaintext without the user knowing.
  *
  * The PAT is verified BEFORE being persisted, and on failure nothing is stored.
  */
@@ -110,7 +113,12 @@ async function verifyPat(host: string, pat: string): Promise<void> {
 export const loginCommand = new Command('login')
     .description('Store a Personal Access Token (PAT) for a 2FA-Vault instance')
     .requiredOption('--host <url>', '2FA-Vault instance URL, e.g. https://vault.example.com')
-    .action(async (opts: { host: string }) => {
+    .option(
+        '--insecure-store',
+        'Allow storing the PAT in a plaintext fallback file (~/.2fav/config.json, mode 0600) when the OS keychain is unavailable. Required to proceed when keytar cannot load (common with cross-compiled binaries on Linux ARM or headless hosts without a secret service).',
+        false,
+    )
+    .action(async (opts: { host: string; insecureStore?: boolean }) => {
         const host = normaliseHost(opts.host);
         const pat = await promptForPat();
         if (!pat) throw new CliError('No token entered.');
@@ -121,12 +129,27 @@ export const loginCommand = new Command('login')
         if (keychainOk) {
             await keychain.store(host, pat);
             console.log(`Logged in to ${host}. Credentials stored in the OS keychain.`);
-        } else {
+        } else if (opts.insecureStore) {
+            // Explicit opt-in to the plaintext fallback. This is common with
+            // `bun build --compile` cross-compiled binaries where the native
+            // keytar binding cannot load for the target architecture.
             await keychain.storeFallback(host, pat);
             console.warn(
                 `Warning: OS keychain unavailable (keytar did not load). ` +
                     `Credentials stored in plaintext at ${keychain.fallbackPath} (mode 0600).`,
             );
             console.log(`Logged in to ${host}.`);
+        } else {
+            // Loud, actionable failure instead of silently degrading to a
+            // plaintext file. The PAT was already verified above; we abort
+            // before persisting it insecurely.
+            throw new CliError(
+                'OS keychain unavailable (keytar did not load). The PAT would ' +
+                    'have to be stored in plaintext (~/.2fav/config.json), which ' +
+                    'is less secure than the OS keychain.\n' +
+                    'To proceed anyway, re-run with --insecure-store.\n' +
+                    'Fix: install/run a secret service (gnome-keyring, KWallet, ' +
+                    'keepassxc) on Linux, or use the from-source build on macOS/Windows.',
+            );
         }
     });
