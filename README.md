@@ -67,6 +67,14 @@ bun run build:win-x64
 2fav copy github
 # OTP copied to clipboard for GitHub.
 
+2fav get github --watch
+# 045698
+# (re-prints the code every TOTP period — TOTP only, ignored for HOTP)
+
+2fav get github --copy
+# 045698
+# OTP copied to clipboard for GitHub.
+
 2fav logout
 # Logged out. Stored credentials removed.
 ```
@@ -77,14 +85,18 @@ bun run build:win-x64
 | --- | --- |
 | `2fav login --host <URL>` | Prompt for a PAT, verify it, and store host + PAT in the OS keychain (plaintext fallback otherwise). |
 | `2fav logout` | Remove stored credentials from the keychain and the fallback file. |
-| `2fav list [--filter <text>]` | List accounts as `[id] service — account`. `--filter` is a case-insensitive substring match on service or account. |
-| `2fav get <service>` | Print the current one-time password for the matching account (server-side OTP). |
+| `2fav list [--filter <text>] [--search <text>]` | List accounts as `[id] service — account`. `--filter` / `--search` are aliases: case-insensitive substring match on service or account. |
+| `2fav get <service> [--watch] [--copy]` | Print the current one-time password for the matching account (server-side OTP). `--watch` re-prints the code each TOTP period (TOTP only). `--copy` also copies it to the clipboard. |
 | `2fav copy <service>` | Copy the current one-time password to the system clipboard. |
 | `2fav --version` / `2fav --help` | Standard help and version output. |
 
 `<service>` matches case-insensitively as a substring of either the service or
 the account label. If more than one account matches, the CLI lists the matches
 and asks you to be more specific — it never silently picks one.
+
+> **E2EE vaults:** when the target vault has end-to-end encryption enabled, the
+> server cannot generate OTPs and `get` / `copy` exit with a clear error. Local
+> vault unlock (CLI Phase 2) will remove this limitation.
 
 ## API contract
 
@@ -100,8 +112,13 @@ All requests send `Authorization: Bearer <PAT>` and `Accept: application/json`.
 ## Security notes
 
 - The PAT is stored in the OS keychain and never written to disk unencrypted
-  unless the keychain is unavailable (in which case the plaintext fallback is
-  created with mode `0600` and a warning is printed).
+  by default.
+- If the OS keychain is unavailable (keytar cannot load — common with
+  cross-compiled binaries on Linux ARM, or headless hosts without a secret
+  service), `login` **refuses to silently degrade**. Re-run with
+  `--insecure-store` to opt in to the plaintext fallback file
+  (`~/.2fav/config.json`, mode `0600`); the CLI prints a warning and a hint
+  on how to fix the keychain binding.
 - Phase 1 generates OTPs **server-side**. With an E2EE-enabled vault, the
   server holds an opaque encrypted payload and cannot generate OTPs — Phase 2
   adds local vault unlock for that case.
