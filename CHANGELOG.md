@@ -5,7 +5,7 @@ All notable changes to the 2FA-Vault CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-08-08
 
 ### Added
 
@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `2fav get <service> --watch`: refreshes the OTP at the start of each TOTP period until interrupted (disabled with a note for HOTP/period-less accounts).
 - `2fav get <service> --copy`: additionally copies the OTP to the system clipboard.
 - E2EE detection in `get`: emits a clear, actionable error when the target account uses E2EE (CLI v1 supports non-E2EE vaults only), instead of failing opaquely.
+- `bun run test` npm/bun script; the release workflow can now gate on it.
+
+### Security
+
+- `2fav login` no longer silently falls back to plaintext PAT storage when keytar cannot load (common with cross-compiled binaries on Linux ARM or headless hosts). It now refuses to persist and requires explicit `--insecure-store` to opt in to the `0600` plaintext fallback.
+
+### Changed
+
+- The compiled binary's `--version` is now read from `package.json` instead of a hardcoded literal, so the two can never drift.
+
+### Tests
+
+- 7 new command-level tests (findUniqueAccount no-match/unique/ambiguous, whitespace trimming, null-service, E2EE shape); 36 tests now pass.
 
 ## [1.0.0] - 2026-06-14
 

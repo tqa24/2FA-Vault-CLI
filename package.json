@@ -1,6 +1,6 @@
 {
   "name": "2favault-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Command-line client for 2FA-Vault. Manage your two-factor accounts from the terminal.",
   "type": "module",
   "license": "MIT",
