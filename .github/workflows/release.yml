@@ -53,7 +53,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build binary (${{ matrix.target }})
+      - name: Run unit tests
+        # Gate the release on the test suite so a regression cannot ship a
+        # binary. Tests run on the build host before cross-compilation.
+        run: bun run test
+
+      - name: Build binary (${ matrix.target }})
         run: bun build src/cli.ts --compile --target=${{ matrix.target }} --outfile dist/${{ matrix.artifact }}
 
       - name: Smoke test (unix)
